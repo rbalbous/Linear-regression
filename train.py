@@ -4,17 +4,16 @@ import math
 def train(tab_m, tab_p):
 	theta_0, theta_1 = 0, 0
 	learning_rate = 0.3
-	for m in range(700):
+	for m in range(720):
 		tmp_0, tmp_1 = 0, 0
 		for i in range(len(tab_m)):
-			tmp_0 = learning_rate * (1 / len(tab_m)) * ((theta_0 + theta_1 * tab_m[i]) - tab_p[i])
-			tmp_1 = learning_rate * (1 / len(tab_m)) * (((theta_0 + theta_1 * tab_m[i]) - tab_p[i]) * tab_m[i])
-		theta_0 -= tmp_0
-		theta_1 -= tmp_1
+			tmp_0 += ((theta_0 + theta_1 * tab_m[i]) - tab_p[i])
+			tmp_1 += (((theta_0 + (theta_1 * tab_m[i])) - tab_p[i]) * tab_m[i])
+		theta_0 -= learning_rate * (tmp_0 / len(tab_m))
+		theta_1 -= learning_rate * (tmp_1 / len(tab_m))
 	return theta_0, theta_1
 
 def norm(tab_m):
-	print(tab_m)
 	min_m = min(tab_m)
 	max_m = max(tab_m)
 	for i in range(len(tab_m)):
