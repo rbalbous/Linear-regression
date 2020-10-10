@@ -1,46 +1,80 @@
 import csv
-import math
+import matplotlib.pyplot as plt
+import numpy as np
 
-def train(tab_m, tab_p):
-	theta_0, theta_1 = 0, 0
-	learning_rate = 0.3
-	for m in range(720):
-		tmp_0, tmp_1 = 0, 0
-		for i in range(len(tab_m)):
-			tmp_0 += ((theta_0 + theta_1 * tab_m[i]) - tab_p[i])
-			tmp_1 += (((theta_0 + (theta_1 * tab_m[i])) - tab_p[i]) * tab_m[i])
-		theta_0 -= learning_rate * (tmp_0 / len(tab_m))
-		theta_1 -= learning_rate * (tmp_1 / len(tab_m))
+
+def train(data, min_km, max_km, min_price, max_price):
+	theta_0 = 0.0
+	theta_1 = 0.0
+	data_len = len(data[1:])
+	for i in range(100000):
+		sum_t0 = 0.0
+		sum_t1 = 0.0
+		learning_rate = 0.005
+		for item in data[1:]:
+    			#normalize the dataset to scale
+			item_0 = (float(item[0]) - min_km) / (max_km - min_km)
+			item_1 = (float(item[1]) - min_price) / (max_price - min_price)
+
+			# Applying the train formula
+			sum_t0 = sum_t0 + (theta_0 + (theta_1 * item_0) - item_1)
+			sum_t1 = sum_t1 + (theta_0 + (theta_1 * item_0) - item_1) * item_0
+		theta_0 -= learning_rate * 1/data_len * sum_t0
+		theta_1 -= learning_rate * 1/data_len * sum_t1
+		# theta_0 -= temp_theta_0
+		# theta_1 -= temp_theta_1
+	return data, theta_0, theta_1
+
+
+def denorm(min_km, max_km, min_price, max_price, theta_0, theta_1):
+	theta_0 = theta_0 * (max_price - min_price) + min_price - (theta_1 * min_km * (max_price - min_price)) / (max_km - min_km)
+	theta_1 = theta_1 * (max_price - min_price) / (max_km - min_km)
 	return theta_0, theta_1
 
-def norm(tab_m):
-	min_m = min(tab_m)
-	max_m = max(tab_m)
-	for i in range(len(tab_m)):
-		tab_m[i] = (tab_m[i] - min_m) / (max_m - min_m)
-	return(tab_m)
 
 def put_in_file(theta_0, theta_1):
-	with open('thetas.csv', 'w') as file:
-		print_file = csv.writer(file)
-		print_file.writerow([theta_0, theta_1])
+	f = open("thetas.txt", "w")
+	f.write(str(theta_0) + "\n" + str(theta_1))
+	f.close()
 
+
+def precision(data, theta_0, theta_1, data_len):
+	precision = 0
+	for item in data[1:]:
+		estimation = float(item[0]) * theta_1 + theta_0
+		if estimation > float(item[1]):
+				precision += float(item[1]) / estimation
+		else:
+			precision += estimation / float(item[1])
+	print("precision: " + str(precision / data_len))
 
 def main():
-	tab_m = []
-	tab_p = []
-	with open('data.csv') as file:
-		tab = csv.reader(file)
-		for item in tab:
-			try:
-				tab_m.append(float(item[0]))
-				tab_p.append(float(item[1]))
-			except:
-				continue
-	tab_m = norm(tab_m)
-	tab_p = norm(tab_p)
-	theta_0 , theta_1 = train(tab_m, tab_p)
+	with open('data.csv', newline='') as f:
+		reader = csv.reader(f)
+		data = list(reader)
+	f.close()
+	data_len = len(data[1:])
+	min_km = min(float(x[0]) for x in data[1:])
+	max_km = max(float(x[0]) for x in data[1:])
+	max_price = max(float(x[1]) for x in data[1:])
+	min_price = min(float(x[1]) for x in data[1:])
+	data, theta_0, theta_1 =  train(data, min_km, max_km, min_price, max_price)
+	theta_0, theta_1 = denorm(min_km, max_km, min_price, max_price, theta_0, theta_1)
 	put_in_file(theta_0, theta_1)
+	precision(data, theta_0, theta_1, data_len)
+
+	#scatter plot data
+	for item in data[1:]:
+		plt.scatter(float(item[0]),float(item[1]), color='blue')
+
+	#plotting line
+	plot_x = np.linspace(0, 250000, 250000)
+	plot_y = theta_1 * plot_x + theta_0
+	plt.plot(plot_x, plot_y, '-r')
+	plt.xlabel("Mileage")
+	plt.ylabel("Price")
+	plt.show()
+
 
 if __name__ == "__main__":
 	main()
